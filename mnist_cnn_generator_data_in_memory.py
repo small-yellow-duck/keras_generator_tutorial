@@ -1,6 +1,14 @@
 '''
 Train a simple convnet on the MNIST dataset using a generator
 
+from the command line run ipython:
+>>>ipython --pylab
+
+in ipython:
+>>>run mnist_cnn_generator_data_in_memory.py
+>>>pred, Y_test = fit()
+
+GTX 760: 1 epoch takes 4 seconds
 '''
 
 from __future__ import print_function
@@ -18,29 +26,26 @@ from keras.optimizers import Adam
 
 
 #list(myGenerator(X_train, y_train, batch_size, fnames_train))[0]
-def myGenerator(X_train, y, batch_size, fnames):
+def myGenerator(X_train, y, batch_size):
 
-
-
-	order = np.arange(len(fnames))
+	order = np.arange(X_train.shape[0])
 
 	while True:
 		
 		if not y is None:
-			np.random.shuffle(order)
-			y = y[order]
-			X_train = X_train[order]
-			fnames = fnames[order]	
+			np.random.shuffle(order)	
+			X_train = X_train[order]	
+			y = y[order]	
 		
-		for i in xrange(np.ceil(1.0*len(fnames)/batch_size).astype(int)):
+		for i in xrange(np.ceil(1.0*X_train.shape[0]/batch_size).astype(int)):
 			
 			#training set
 			if not y is None:	
-				yield X[i*batch_size:(i+1)*batch_size], y[i*batch_size:(i+1)*batch_size]
+				yield X_train[i*batch_size:(i+1)*batch_size], y[i*batch_size:(i+1)*batch_size]
 				
 			#test set
 			else:
-				yield X
+				yield X_train[i*batch_size:(i+1)*batch_size]
 					
 					
 
@@ -48,12 +53,16 @@ def myGenerator(X_train, y, batch_size, fnames):
 
 #pred, Y_test = fit()
 def fit():
-	batch_size = 16
+	batch_size = 128
 	nb_epoch = 15
 
-
-
 	(X_train, y_train), (X_test, y_test) = mnist.load_data()
+	X_train = X_train.reshape((X_train.shape[0],) + (1,) + X_train.shape[1:]).astype(np.float)
+	X_test = X_test.reshape((X_test.shape[0],) + (1,) + X_test.shape[1:]).astype(np.float)
+	
+	#normalize
+	X_train /= 255.0
+	X_test /= 255.0
 	
 	# input image dimensions
 	img_rows, img_cols = 28, 28
@@ -63,13 +72,14 @@ def fit():
 	nb_pool = 2
 	# convolution kernel size
 	nb_conv = 3
+	
 
 	#load all the labels for the train and test sets
-	y_train = np.loadtxt('labels_train.csv')
-	y_test = np.loadtxt('labels_test.csv')
+	#y_train = np.loadtxt('labels_train.csv')
+	#y_test = np.loadtxt('labels_test.csv')
 	
-	fnames_train = np.array(['train/train'+str(i)+'.png' for i in xrange(len(y_train))])
-	fnames_test = np.array(['test/test'+str(i)+'.png' for i in xrange(len(y_test))])
+	#fnames_train = np.array(['train/train'+str(i)+'.png' for i in xrange(len(y_train))])
+	#fnames_test = np.array(['test/test'+str(i)+'.png' for i in xrange(len(y_test))])
 	
 	nb_classes = len(np.unique(y_train))
 
@@ -104,10 +114,10 @@ def fit():
 				  optimizer=optimizer,
 				  metrics=['accuracy'])
 
-	model.fit_generator(myGenerator(Y_train, batch_size, fnames_train), samples_per_epoch = int(Y_train.shape[0]/batch_size), nb_epoch = nb_epoch, verbose=1,callbacks=[], validation_data=None, class_weight=None, max_q_size=10) # show_accuracy=True, nb_worker=1 
+	model.fit_generator(myGenerator(X_train, Y_train, batch_size), samples_per_epoch = Y_train.shape[0], nb_epoch = nb_epoch, verbose=1,callbacks=[], validation_data=None) # show_accuracy=True, nb_worker=1 
 		  
 
-	pred = model.predict_generator(myGenerator(None, batch_size, fnames_test), len(fnames_test), max_q_size=10) # show_accuracy=True, nb_worker=1 
+	pred = model.predict_generator(myGenerator(X_test, None, batch_size), X_test.shape[0]) # show_accuracy=True, nb_worker=1 
 
 	#score = model.evaluate(X_test, Y_test, verbose=0)
 	#print('Test score:', score[0])

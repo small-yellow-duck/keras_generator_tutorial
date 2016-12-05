@@ -1,8 +1,14 @@
-'''Trains a simple convnet on the MNIST dataset.
+'''
+Train a simple convnet on the MNIST dataset using a generator
 
-Gets to 99.25% test accuracy after 12 epochs
-(there is still a lot of margin for parameter tuning).
-16 seconds per epoch on a GRID K520 GPU.
+from the command line run ipython:
+>>>ipython --pylab
+
+in ipython:
+>>>run mnist_cnn_generator_data_on_hd.py
+>>>pred, Y_test = fit()
+
+GTX 760: 1 epoch takes 12 seconds
 '''
 
 from __future__ import print_function
